@@ -53,6 +53,7 @@ pcl::KdTreeFLANN<PointT, Dist>::KdTreeFLANN (bool sorted)
   , dim_ (0), total_nr_points_ (0)
   , param_k_ (::flann::SearchParams (-1 , epsilon_))
   , param_radius_ (::flann::SearchParams (-1, epsilon_, sorted))
+  , tree_type_(0)
 {
 }
 
@@ -65,6 +66,7 @@ pcl::KdTreeFLANN<PointT, Dist>::KdTreeFLANN (const KdTreeFLANN<PointT, Dist> &k)
   , dim_ (0), total_nr_points_ (0)
   , param_k_ (::flann::SearchParams (-1 , epsilon_))
   , param_radius_ (::flann::SearchParams (-1, epsilon_, false))
+  , tree_type_(0)
 {
   *this = k;
 }
@@ -98,7 +100,11 @@ pcl::KdTreeFLANN<PointT, Dist>::setInputCloud (const PointCloudConstPtr &cloud, 
 
   input_   = cloud;
   indices_ = indices;
-  
+
+  clock_t begin, end;
+  double elapsed_secs;
+  begin = clock();
+
   // Allocate enough data
   if (!input_)
   {
@@ -113,6 +119,10 @@ pcl::KdTreeFLANN<PointT, Dist>::setInputCloud (const PointCloudConstPtr &cloud, 
   {
     convertCloudToArray (*input_);
   }
+  end = clock();
+  elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+  PCL_ERROR("(kdtree_flann.hpp) convertCloudToArray: %f\n", elapsed_secs);
+
   total_nr_points_ = static_cast<int> (index_mapping_.size ());
   if (total_nr_points_ == 0)
   {
@@ -120,11 +130,14 @@ pcl::KdTreeFLANN<PointT, Dist>::setInputCloud (const PointCloudConstPtr &cloud, 
     return;
   }
 
-  flann_index_.reset (new FLANNIndex (::flann::Matrix<float> (cloud_.get (), 
-                                                              index_mapping_.size (), 
-                                                              dim_),
-                                      ::flann::KDTreeSingleIndexParams (15))); // max 15 points/leaf
-  flann_index_->buildIndex ();
+  if (tree_type_ == 0)
+  {
+    flann_index_.reset (new FLANNIndex (::flann::Matrix<float> (cloud_.get (), 
+                                                                index_mapping_.size (), 
+                                                                dim_),
+                                        ::flann::KDTreeSingleIndexParams (15))); // max 15 points/leaf
+  }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -291,6 +304,12 @@ pcl::KdTreeFLANN<PointT, Dist>::convertCloudToArray (const PointCloud &cloud, co
     point_representation_->vectorize (cloud.points[*iIt], cloud_ptr);
     cloud_ptr += dim_;
   }
+}
+
+template <typename PointT, typename Dist> void 
+pcl::KdTreeFLANN<PointT, Dist>::setTreeType(int tree_type)
+{
+  tree_type_ = tree_type;
 }
 
 #define PCL_INSTANTIATE_KdTreeFLANN(T) template class PCL_EXPORTS pcl::KdTreeFLANN<T>;

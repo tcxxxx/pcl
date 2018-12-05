@@ -182,6 +182,10 @@ namespace pcl
       radiusSearch (const PointT &point, double radius, std::vector<int> &k_indices,
                     std::vector<float> &k_sqr_distances, unsigned int max_nn = 0) const;
 
+      // modification
+      // set kdtree type
+      void setTreeType(int tree_type);
+
     private:
       /** \brief Internal cleanup method. */
       void 
@@ -224,6 +228,9 @@ namespace pcl
 
       /** \brief The total size of the data (either equal to the number of points in the input cloud or to the number of indices - if passed). */
       int total_nr_points_;
+
+      // kdtree type
+      int tree_type_;
 
       /** \brief The KdTree search parameters for K-nearest neighbors. */
       ::flann::SearchParams param_k_;
